@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulado de Concursos v2.0</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --success: #22c55e;
+            --danger: #ef4444;
+            --bg: #f8fafc;
+        }
+
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg); display: flex; flex-direction: column; align-items: center; min-height: 100vh; margin: 0; padding: 20px; }
+        
+        .header { text-align: center; margin-bottom: 20px; }
+        .stats { font-weight: bold; color: var(--primary); margin-bottom: 10px; }
+
+        .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); max-width: 650px; width: 100%; }
+        
+        .enunciado { font-size: 1.2rem; margin-bottom: 20px; line-height: 1.5; color: #1e293b; }
+
+        .opcao { display: block; margin: 12px 0; padding: 15px; border: 2px solid #e2e8f0; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; font-size: 1rem; }
+        .opcao:hover { border-color: var(--primary); background-color: #eff6ff; }
+        .opcao.selecionada { border-color: var(--primary); background-color: #dbeafe; }
+
+        /* Estados de correção */
+        .correta { background-color: #dcfce7 !important; border-color: var(--success) !important; color: #166534; font-weight: bold; }
+        .errada { background-color: #fee2e2 !important; border-color: var(--danger) !important; color: #991b1b; }
+
+        .controles { margin-top: 25px; display: flex; gap: 10px; }
+        
+        button { flex: 1; padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 1rem; transition: 0.3s; }
+        .btn-confirmar { background-color: var(--primary); color: white; }
+        .btn-proxima { background-color: #64748b; color: white; display: none; }
+        button:disabled { background-color: #cbd5e1; cursor: not-allowed; }
+
+        #resultado-texto { margin-top: 15px; font-weight: bold; text-align: center; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>Simulado Online</h1>
+    <div class="stats">Acertos: <span id="placar">0</span> / <span id="total-respondidas">0</span></div>
+</div>
+
+<div class="card">
+    <div id="questao-container">
+        <p class="enunciado" id="enunciado"></p>
+        <div id="alternativas"></div>
+        
+        <div class="controles">
+            <button id="btn-confirmar" class="btn-confirmar" onclick="verificar()">Confirmar Resposta</button>
+            <button id="btn-proxima" class="btn-proxima" onclick="proximaQuestao()">Próxima Questão</button>
+        </div>
+        <p id="resultado-texto"></p>
+    </div>
+</div>
+
+<script>
+    // 1. BANCO DE DADOS DE QUESTÕES (Você pode adicionar quantas quiser aqui)
+    const bancoQuestoes = [
+        {
+            pergunta: "De acordo com a Constituição Federal, a República Federativa do Brasil tem como fundamento:",
+            opcoes: ["O Poder Moderador", "A Dignidade da Pessoa Humana", "O Parlamentarismo", "A Propriedade Privada absoluta"],
+            correta: 1
+        },
+        {
+            pergunta: "Em qual estado brasileiro localiza-se o distrito de Sítio Alegre?",
+            opcoes: ["Bahia", "Ceará", "Goiás", "Minas Gerais"],
+            correta: 2 // Exemplo: Goiás (referente a Morrinhos)
+        },
+        {
+            pergunta: "Qual o atalho de teclado usado para copiar um item selecionado no Windows?",
+            opcoes: ["Ctrl + V", "Ctrl + X", "Ctrl + C", "Ctrl + Z"],
+            correta: 2
+        }
+    ];
+
+    let indiceAtual = 0;
+    let acertos = 0;
+    let respondidas = 0;
+    let opcaoSelecionadaIdx = null;
+    let jaVerificou = false;
+
+    // 2. FUNÇÃO PARA CARREGAR A QUESTÃO NA TELA
+    function renderizarQuestao() {
+        jaVerificou = false;
+        opcaoSelecionadaIdx = null;
+        document.getElementById('btn-confirmar').disabled = false;
+        document.getElementById('btn-proxima').style.display = 'none';
+        document.getElementById('resultado-texto').innerText = '';
+        
+        const q = bancoQuestoes[indiceAtual];
+        document.getElementById('enunciado').innerText = q.pergunta;
+        
+        const divAlts = document.getElementById('alternativas');
+        divAlts.innerHTML = ''; // Limpa as opções anteriores
+
+        q.opcoes.forEach((texto, i) => {
+            const div = document.createElement('div');
+            div.classList.add('opcao');
+            div.innerText = texto;
+            div.onclick = () => selecionar(i, div);
+            divAlts.appendChild(div);
+        });
+    }
+
+    // 3. LOGICA DE SELEÇÃO
+    function selecionar(idx, elemento) {
+        if(jaVerificou) return; // Trava a seleção após responder
+
+        const todas = document.querySelectorAll('.opcao');
+        todas.forEach(o => o.classList.remove('selecionada'));
+        
+        elemento.classList.add('selecionada');
+        opcaoSelecionadaIdx = idx;
+    }
+
+    // 4. VERIFICAÇÃO DE ACERTO
+    function verificar() {
+        if (opcaoSelecionadaIdx === null) return alert("Selecione uma opção!");
+
+        jaVerificou = true;
+        respondidas++;
+        const corretaIdx = bancoQuestoes[indiceAtual].correta;
+        const opcoesElementos = document.querySelectorAll('.opcao');
+
+        if (opcaoSelecionadaIdx === corretaIdx) {
+            opcoesElementos[opcaoSelecionadaIdx].classList.add('correta');
+            acertos++;
+            document.getElementById('resultado-texto').innerHTML = "<span style='color:green'>Correto! ✨</span>";
+        } else {
+            opcoesElementos[opcaoSelecionadaIdx].classList.add('errada');
+            opcoesElementos[corretaIdx].classList.add('correta');
+            document.getElementById('resultado-texto').innerHTML = "<span style='color:red'>Errado! A resposta certa está em verde.</span>";
+        }
+
+        // Atualiza Placar
+        document.getElementById('placar').innerText = acertos;
+        document.getElementById('total-respondidas').innerText = respondidas;
+
+        // Troca os botões
+        document.getElementById('btn-confirmar').disabled = true;
+        document.getElementById('btn-proxima').style.display = 'block';
+    }
+
+    // 5. NAVEGAÇÃO
+    function proximaQuestao() {
+        indiceAtual++;
+        if (indiceAtual < bancoQuestoes.length) {
+            renderizarQuestao();
+        } else {
+            document.querySelector('.card').innerHTML = `<h2>Simulado Concluído!</h2><p>Você acertou ${acertos} de ${bancoQuestoes.length} questões.</p><button onclick="location.reload()">Reiniciar</button>`;
+        }
+    }
+
+    // Inicializa o site
+    renderizarQuestao();
+</script>
+
+</body>
+</html>
