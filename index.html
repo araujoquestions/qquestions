@@ -33,4 +33,89 @@
         <button class="btn-voltar" onclick="voltarAoMenu()">← Voltar</button>
         <div id="estatisticas"></div>
         <h3 id="enunciado"></h3>
-        <div id="altern
+        <div id="alternativas"></div>
+        <button id="btn-confirmar" style="width:100%; padding:15px; background:var(--primary); color:white; border:none; border-radius:8px; margin-top:10px;" onclick="verificar()">Confirmar</button>
+        <button id="btn-proxima" class="hidden" style="width:100%; padding:15px; background:#10b981; color:white; border:none; border-radius:8px; margin-top:10px;" onclick="proxima()">Próxima Questão</button>
+    </div>
+</div>
+
+<script>
+    // 1. BANCO DE DADOS COM CATEGORIAS
+    const bancoQuestoes = [
+        { materia: "Português", pergunta: "Qual a classe gramatical de 'rápido' em 'Ele corre rápido'?", opcoes: ["Substantivo", "Adjetivo", "Advérbio", "Verbo"], correta: 2 },
+        { materia: "Português", pergunta: "Sinônimo de 'efêmero':", opcoes: ["Eterno", "Passageiro", "Forte", "Lento"], correta: 1 },
+        { materia: "Direito", pergunta: "Quem é o chefe do Poder Executivo Municipal?", opcoes: ["Governador", "Vereador", "Juiz", "Prefeito"], correta: 3 },
+        { materia: "Informática", pergunta: "O que significa a sigla RAM?", opcoes: ["Read Access Memory", "Random Access Memory", "Run Any Memory"], correta: 1 }
+    ];
+
+    let questoesFiltradas = [];
+    let indiceAtual = 0;
+    let selecionadaIdx = null;
+
+    function iniciarSimulado(categoria) {
+        // Filtra apenas as questões da matéria escolhida
+        questoesFiltradas = bancoQuestoes.filter(q => q.materia === categoria);
+        indiceAtual = 0;
+        
+        document.getElementById('tela-categorias').classList.add('hidden');
+        document.getElementById('tela-simulado').classList.remove('hidden');
+        carregarQuestao();
+    }
+
+    function carregarQuestao() {
+        const q = questoesFiltradas[indiceAtual];
+        document.getElementById('enunciado').innerText = q.pergunta;
+        document.getElementById('btn-proxima').classList.add('hidden');
+        document.getElementById('btn-confirmar').classList.remove('hidden');
+        
+        const areaAlts = document.getElementById('alternativas');
+        areaAlts.innerHTML = '';
+        
+        q.opcoes.forEach((texto, i) => {
+            const div = document.createElement('div');
+            div.className = 'opcao';
+            div.innerText = texto;
+            div.onclick = () => {
+                document.querySelectorAll('.opcao').forEach(o => o.style.borderColor = '#e2e8f0');
+                div.style.borderColor = '#2563eb';
+                selecionadaIdx = i;
+            };
+            areaAlts.appendChild(div);
+        });
+    }
+
+    function verificar() {
+        if(selecionadaIdx === null) return alert("Selecione uma!");
+        
+        const correta = questoesFiltradas[indiceAtual].correta;
+        const divs = document.querySelectorAll('.opcao');
+        
+        if(selecionadaIdx === correta) {
+            divs[selecionadaIdx].classList.add('correta');
+        } else {
+            divs[selecionadaIdx].classList.add('errada');
+            divs[correta].classList.add('correta');
+        }
+        
+        document.getElementById('btn-confirmar').classList.add('hidden');
+        document.getElementById('btn-proxima').classList.remove('hidden');
+    }
+
+    function proxima() {
+        indiceAtual++;
+        if(indiceAtual < questoesFiltradas.length) {
+            selecionadaIdx = null;
+            carregarQuestao();
+        } else {
+            alert("Fim da matéria!");
+            voltarAoMenu();
+        }
+    }
+
+    function voltarAoMenu() {
+        document.getElementById('tela-simulado').classList.add('hidden');
+        document.getElementById('tela-categorias').classList.remove('hidden');
+    }
+</script>
+</body>
+</html>
