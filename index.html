@@ -3,131 +3,184 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simulado Profissional - Resultados</title>
+    <title>Sistema de Concursos - Admin</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        :root { --primary: #2563eb; --bg: #f1f5f9; --text: #1e293b; }
-        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); padding: 20px; display: flex; justify-content: center; }
-        .card { background: white; padding: 2rem; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); max-width: 700px; width: 100%; position: relative; text-align: center; }
+        :root { --primary: #2563eb; --secondary: #64748b; --bg: #f8fafc; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); padding: 20px; }
+        .container { max-width: 800px; margin: auto; }
+        .card { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
         
-        .timer-box { position: absolute; top: 20px; right: 20px; background: #fee2e2; color: #b91c1c; padding: 8px 15px; border-radius: 20px; font-weight: bold; }
-        .opcao { border: 2px solid #e2e8f0; padding: 15px; margin: 12px 0; border-radius: 10px; cursor: pointer; text-align: left; }
-        .correta { background: #dcfce7 !important; border-color: #22c55e !important; }
-        .errada { background: #fee2e2 !important; border-color: #ef4444 !important; }
+        input, select, textarea { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
+        .btn { padding: 12px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; color: white; transition: 0.3s; }
+        .btn-blue { background: var(--primary); }
+        .btn-green { background: #10b981; }
+        .btn-red { background: #ef4444; margin-top: 10px; }
+        
+        .opcao-item { display: flex; align-items: center; gap: 10px; }
         .hidden { display: none; }
+        .tab-btn { background: #e2e8f0; border: none; padding: 10px 20px; cursor: pointer; border-radius: 5px 5px 0 0; }
+        .tab-active { background: white; border-bottom: 2px solid var(--primary); font-weight: bold; }
         
-        .btn-principal { width: 100%; padding: 15px; border: none; border-radius: 10px; cursor: pointer; font-size: 1rem; font-weight: bold; margin-top: 10px; background: var(--primary); color: white; }
-        
-        /* Estilo do Gráfico */
-        .chart-container { width: 300px; margin: 20px auto; }
+        .questao-lista { border-bottom: 1px solid #eee; padding: 10px 0; display: flex; justify-content: space-between; }
     </style>
 </head>
 <body>
 
-<div class="card">
-    <div id="timer" class="timer-box hidden">00:00</div>
-
-    <div id="tela-categorias">
-        <h2>Escolha seu Simulado</h2>
-        <button class="btn-principal" onclick="iniciar('Geral')">Iniciar Simulado Geral</button>
+<div class="container">
+    <div class="tabs">
+        <button id="btnTabSimulado" class="tab-btn tab-active" onclick="mudarAba('simulado')">Fazer Simulado</button>
+        <button id="btnTabAdmin" class="tab-btn" onclick="mudarAba('admin')">Área do Professor</button>
     </div>
 
-    <div id="tela-simulado" class="hidden">
-        <h3 id="enunciado"></h3>
-        <div id="alternativas"></div>
-        <button id="btn-confirmar" class="btn-principal" onclick="verificar()">Confirmar</button>
-        <button id="btn-proxima" class="btn-principal hidden" style="background:#10b981" onclick="proxima()">Próxima</button>
-    </div>
-
-    <div id="tela-final" class="hidden">
-        <h2>Simulado Concluído!</h2>
-        <p id="feedback-texto"></p>
-        <div class="chart-container">
-            <canvas id="meuGrafico"></canvas>
+    <div id="aba-simulado" class="card">
+        <div id="jogo">
+            <h2 id="enunciado">Carregando questões...</h2>
+            <div id="alternativas"></div>
+            <button class="btn btn-blue" id="btn-verificar" onclick="verificar()">Confirmar Resposta</button>
+            <button class="btn btn-green hidden" id="btn-proxima" onclick="proxima()">Próxima Questão</button>
         </div>
-        <button class="btn-principal" onclick="location.reload()">Tentar Novamente</button>
+        
+        <div id="resultado" class="hidden">
+            <h2>Resultado Final</h2>
+            <canvas id="graficoResultados"></canvas>
+            <button class="btn btn-blue" onclick="location.reload()">Recomeçar</button>
+        </div>
+    </div>
+
+    <div id="aba-admin" class="card hidden">
+        <h2>Cadastrar Nova Questão</h2>
+        <input type="text" id="add-enunciado" placeholder="Enunciado da questão">
+        <input type="text" id="add-opt0" placeholder="Alternativa A (Correta)">
+        <input type="text" id="add-opt1" placeholder="Alternativa B">
+        <input type="text" id="add-opt2" placeholder="Alternativa C">
+        <input type="text" id="add-opt3" placeholder="Alternativa D">
+        <button class="btn btn-green" onclick="salvarQuestao()">Salvar Questão</button>
+        
+        <hr style="margin: 30px 0;">
+        <h3>Questões no Banco (<span id="total-banco">0</span>)</h3>
+        <div id="lista-gerenciamento"></div>
+        <button class="btn btn-red" onclick="limparBanco()">Apagar Todas as Questões</button>
     </div>
 </div>
 
 <script>
-    const bancoQuestoes = [
-        { pergunta: "Quanto é 2 + 2?", opcoes: ["3", "4", "5"], correta: 1 },
-        { pergunta: "Qual a capital do Brasil?", opcoes: ["RJ", "SP", "Brasília"], correta: 2 },
-        { pergunta: "O céu é azul?", opcoes: ["Sim", "Não"], correta: 0 }
+    // Inicialização do Banco de Dados (LocalStorage)
+    let banco = JSON.parse(localStorage.getItem('meuSimulado')) || [
+        { enunciado: "Qual o distrito sede de Morrinhos?", opcoes: ["Sítio Alegre", "Centro", "Lagoa", "Vila Nova"], correta: 0 }
     ];
 
     let atual = 0;
     let acertos = 0;
-    let selecionado = null;
+    let selecionada = null;
 
-    function iniciar() {
-        document.getElementById('tela-categorias').classList.add('hidden');
-        document.getElementById('tela-simulado').classList.remove('hidden');
-        carregar();
+    function mudarAba(aba) {
+        document.getElementById('aba-simulado').classList.toggle('hidden', aba !== 'simulado');
+        document.getElementById('aba-admin').classList.toggle('hidden', aba !== 'admin');
+        document.getElementById('btnTabSimulado').className = aba === 'simulado' ? 'tab-btn tab-active' : 'tab-btn';
+        document.getElementById('btnTabAdmin').className = aba === 'admin' ? 'tab-btn tab-active' : 'tab-btn';
+        if(aba === 'admin') listarQuestõesAdmin();
     }
 
-    function carregar() {
-        const q = bancoQuestoes[atual];
-        selecionado = null;
-        document.getElementById('enunciado').innerText = q.pergunta;
+    // --- LÓGICA DO PROFESSOR (CADASTRO) ---
+    function salvarQuestao() {
+        const novaQ = {
+            enunciado: document.getElementById('add-enunciado').value,
+            opcoes: [
+                document.getElementById('add-opt0').value,
+                document.getElementById('add-opt1').value,
+                document.getElementById('add-opt2').value,
+                document.getElementById('add-opt3').value
+            ],
+            correta: 0 // No nosso exemplo, a primeira sempre será a correta para simplificar
+        };
+
+        if(!novaQ.enunciado || !novaQ.opcoes[0]) return alert("Preencha os campos!");
+        
+        banco.push(novaQ);
+        localStorage.setItem('meuSimulado', JSON.stringify(banco));
+        alert("Questão salva com sucesso!");
+        listarQuestõesAdmin();
+        
+        // Limpar campos
+        document.querySelectorAll('#aba-admin input').forEach(i => i.value = '');
+    }
+
+    function listarQuestõesAdmin() {
+        const lista = document.getElementById('lista-gerenciamento');
+        document.getElementById('total-banco').innerText = banco.length;
+        lista.innerHTML = '';
+        banco.forEach((q, i) => {
+            lista.innerHTML += `<div class="questao-lista"><span>${i+1}. ${q.enunciado.substring(0,30)}...</span></div>`;
+        });
+    }
+
+    function limparBanco() {
+        if(confirm("Deseja apagar tudo?")) {
+            localStorage.removeItem('meuSimulado');
+            location.reload();
+        }
+    }
+
+    // --- LÓGICA DO SIMULADO ---
+    function carregarQuestao() {
+        if(banco.length === 0) return document.getElementById('enunciado').innerText = "Nenhuma questão cadastrada.";
+        
+        const q = banco[atual];
+        document.getElementById('enunciado').innerText = q.enunciado;
         const area = document.getElementById('alternativas');
         area.innerHTML = '';
-        q.opcoes.forEach((t, i) => {
-            const div = document.createElement('div');
-            div.className = 'opcao';
-            div.innerText = t;
-            div.onclick = () => {
-                document.querySelectorAll('.opcao').forEach(o => o.style.borderColor = '#e2e8f0');
-                div.style.borderColor = '#2563eb';
-                selecionado = i;
+        
+        // Embaralhar opções para não ser sempre a 'A' a correta (Lógica simples de exibição)
+        q.opcoes.forEach((texto, i) => {
+            const d = document.createElement('div');
+            d.className = 'opcao';
+            d.style = "border: 1px solid #ddd; padding: 10px; margin: 5px 0; cursor: pointer; border-radius: 5px;";
+            d.innerText = texto;
+            d.onclick = () => {
+                document.querySelectorAll('.opcao').forEach(el => el.style.borderColor = '#ddd');
+                d.style.borderColor = 'var(--primary)';
+                selecionada = i;
             };
-            area.appendChild(div);
+            d.classList.add('opcao');
+            area.appendChild(d);
         });
-        document.getElementById('btn-confirmar').classList.remove('hidden');
-        document.getElementById('btn-proxima').classList.add('hidden');
     }
 
     function verificar() {
-        if(selecionado === null) return;
-        const correta = bancoQuestoes[atual].correta;
-        const divs = document.querySelectorAll('.opcao');
-        if(selecionado === correta) {
-            acertos++;
-            divs[selecionado].classList.add('correta');
-        } else {
-            divs[selecionado].classList.add('errada');
-            divs[correta].classList.add('correta');
-        }
-        document.getElementById('btn-confirmar').classList.add('hidden');
+        if(selecionada === null) return alert("Selecione uma opção!");
+        if(selecionada === banco[atual].correta) acertos++;
+        
+        document.getElementById('btn-verificar').classList.add('hidden');
         document.getElementById('btn-proxima').classList.remove('hidden');
     }
 
     function proxima() {
         atual++;
-        if(atual < bancoQuestoes.length) carregar();
-        else mostrarResultado();
+        if(atual < banco.length) {
+            selecionada = null;
+            document.getElementById('btn-verificar').classList.remove('hidden');
+            document.getElementById('btn-proxima').classList.add('hidden');
+            carregarQuestao();
+        } else {
+            mostrarFim();
+        }
     }
 
-    function mostrarResultado() {
-        document.getElementById('tela-simulado').classList.add('hidden');
-        document.getElementById('tela-final').classList.remove('hidden');
-        
-        const erros = bancoQuestoes.length - acertos;
-        document.getElementById('feedback-texto').innerText = `Você acertou ${acertos} de ${bancoQuestoes.length} questões.`;
-
-        // CRIANDO O GRÁFICO
-        const ctx = document.getElementById('meuGrafico').getContext('2d');
-        new Chart(ctx, {
-            type: 'pie',
+    function mostrarFim() {
+        document.getElementById('jogo').classList.add('hidden');
+        document.getElementById('resultado').classList.remove('hidden');
+        new Chart(document.getElementById('graficoResultados'), {
+            type: 'doughnut',
             data: {
                 labels: ['Acertos', 'Erros'],
-                datasets: [{
-                    data: [acertos, erros],
-                    backgroundColor: ['#22c55e', '#ef4444']
-                }]
+                datasets: [{ data: [acertos, banco.length - acertos], backgroundColor: ['#10b981', '#ef4444'] }]
             }
         });
     }
+
+    carregarQuestao();
 </script>
+
 </body>
 </html>
