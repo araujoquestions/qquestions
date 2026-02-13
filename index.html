@@ -109,7 +109,10 @@ const firebaseConfig = {
     let respondida = false;
 
     // Funções de Autenticação expostas ao Window
-    window.loginGoogle = () => signInWithPopup(auth, provider);
+    window.loginGoogle = () => {
+    const provider = new GoogleAuthProvider();
+    signInWithRedirect(auth, provider);
+};
     window.logout = () => signOut(auth);
 
     // Monitor de Estado de Login
@@ -224,5 +227,6 @@ const firebaseConfig = {
 </script>
 </body>
 </html>
+
 
 
