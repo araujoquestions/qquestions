@@ -5,20 +5,14 @@
     <title>Simulado Morrinhos - Pro</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        :root { --primary: #2563eb; --success: #22c55e; --danger: #ef4444; --bg: #f8fafc; }
+        :root { --primary: #2563eb; --bg: #f8fafc; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 20px; }
         .nav { display: flex; justify-content: space-between; align-items: center; background: white; padding: 15px 30px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         .user-info { display: flex; align-items: center; gap: 10px; }
         .user-info img { width: 40px; border-radius: 50%; }
         .card { background: white; padding: 30px; border-radius: 15px; max-width: 650px; margin: auto; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        .opcao { border: 2px solid #e2e8f0; padding: 15px; margin: 10px 0; border-radius: 10px; cursor: pointer; transition: 0.2s; }
-        .selecionada { border-color: var(--primary); background: #eff6ff; }
-        .correta { background: #dcfce7 !important; border-color: var(--success) !important; color: #166534; font-weight: bold; }
-        .errada { background: #fee2e2 !important; border-color: var(--danger) !important; color: #991b1b; }
-        .btn { width: 100%; padding: 15px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; }
-        .btn-blue { background: var(--primary); color: white; }
-        .btn-next { background: #10b981; color: white; }
         .hidden { display: none; }
+        .btn-blue { background: var(--primary); color: white; border: none; padding: 15px; border-radius: 8px; width: 100%; cursor: pointer; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -26,7 +20,7 @@
 <div class="nav">
     <h2>Simulado Morrinhos</h2>
     <div id="auth-section">
-        <button onclick="loginGoogle()" style="cursor:pointer; display:flex; align-items:center; gap:8px; background:white; border:1px solid #ddd; padding:8px 15px; border-radius:5px; font-weight:bold;">
+        <button id="btn-login-google" style="cursor:pointer; display:flex; align-items:center; gap:8px; background:white; border:1px solid #ddd; padding:8px 15px; border-radius:5px; font-weight:bold;">
             <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/pwa/google.svg" width="20"> Entrar com Google
         </button>
     </div>
@@ -34,7 +28,7 @@
         <div class="user-info">
             <span id="user-name"></span>
             <img id="user-photo" src="">
-            <button onclick="logout()" style="border:none; background:none; color:red; cursor:pointer; font-weight:bold; margin-left:10px;">Sair</button>
+            <button id="btn-logout" style="border:none; background:none; color:red; cursor:pointer; font-weight:bold; margin-left:10px;">Sair</button>
         </div>
     </div>
 </div>
@@ -42,25 +36,12 @@
 <div class="card">
     <div id="tela-boas-vindas">
         <h1 style="text-align: center;">Portal de Estudos</h1>
-        <p style="text-align: center; color: #666;">Clique no botão acima para entrar e começar o simulado.</p>
+        <p style="text-align: center; color: #666;">Faça login para começar.</p>
     </div>
 
     <div id="area-estudo" class="hidden">
-        <div style="display: flex; justify-content: space-between; color: #64748b; font-size: 0.9rem; margin-bottom: 10px;">
-            <span>Questão <span id="q-atual">1</span></span>
-            <span>Acertos: <span id="q-acertos">0</span></span>
-        </div>
-        <h3 id="pergunta-txt">Carregando questões da nuvem...</h3>
+        <h3 id="pergunta-txt">Carregando questões...</h3>
         <div id="opcoes-container"></div>
-        <div id="feedback" style="text-align: center; margin-top: 15px; font-weight: bold;"></div>
-        <button id="btn-confirmar" class="btn btn-blue" onclick="verificarResposta()">Confirmar Resposta</button>
-        <button id="btn-proxima" class="btn btn-next hidden" onclick="proximaQuestao()">Próxima Questão</button>
-    </div>
-
-    <div id="tela-final" class="hidden">
-        <h2 style="text-align: center;">Desempenho Final</h2>
-        <canvas id="graficoFinal" width="400" height="400"></canvas>
-        <button class="btn btn-blue" onclick="location.reload()">Reiniciar</button>
     </div>
 </div>
 
@@ -69,7 +50,8 @@
     import { getAuth, signInWithRedirect, getRedirectResult, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
     import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-    const firebaseConfig = { 
+    // --- COLOQUE SEUS DADOS REAIS AQUI ---
+   const firebaseConfig = { 
   apiKey : "AIzaSyAKpX4VawBCUzE9CwmJBX5eM4CZF4YG4LI" , 
   authDomain : "qquestions-1450b.firebaseapp.com" , 
   URL do banco de dados : " https://qquestions-1450b-default-rtdb.firebaseio.com " 
@@ -84,24 +66,16 @@
     const db = getDatabase(app);
     const provider = new GoogleAuthProvider();
 
-    let bancoGeral = [];
-    let indiceAtual = 0;
-    let acertos = 0;
-    let selecionadaIdx = null;
-    let respondida = false;
-
-    // LOGIN POR REDIRECIONAMENTO
-    window.loginGoogle = () => {
+    // Lógica de Login (Agora usando o ID do botão para evitar erros)
+    document.getElementById('btn-login-google').addEventListener('click', () => {
         signInWithRedirect(auth, provider);
-    };
-
-    window.logout = () => signOut(auth);
-
-    // ESCUTA O RESULTADO DO REDIRECT QUANDO A PÁGINA RECARREGA
-    getRedirectResult(auth).catch((error) => {
-        console.error("Erro ao voltar do login:", error.message);
     });
 
+    document.getElementById('btn-logout').addEventListener('click', () => {
+        signOut(auth);
+    });
+
+    // Monitor de Login
     onAuthStateChanged(auth, (user) => {
         if (user) {
             document.getElementById('auth-section').classList.add('hidden');
@@ -110,7 +84,7 @@
             document.getElementById('area-estudo').classList.remove('hidden');
             document.getElementById('user-name').innerText = user.displayName;
             document.getElementById('user-photo').src = user.photoURL;
-            carregarDadosDaNuvem();
+            carregarDados();
         } else {
             document.getElementById('auth-section').classList.remove('hidden');
             document.getElementById('user-section').classList.add('hidden');
@@ -119,86 +93,18 @@
         }
     });
 
-    function carregarDadosDaNuvem() {
-        const questoesRef = ref(db, 'questoes');
-        onValue(questoesRef, (snapshot) => {
+    function carregarDados() {
+        const questRef = ref(db, 'questoes');
+        onValue(questRef, (snapshot) => {
             const data = snapshot.val();
             if(data) {
-                bancoGeral = Object.values(data);
-                exibirQuestao();
+                const lista = Object.values(data);
+                document.getElementById('pergunta-txt').innerText = lista[0].enunciado;
             } else {
-                document.getElementById('pergunta-txt').innerText = "Nenhuma questão encontrada no banco de dados.";
-            }
-        });
-    }
-
-    window.exibirQuestao = () => {
-        respondida = false;
-        selecionadaIdx = null;
-        const q = bancoGeral[indiceAtual];
-        document.getElementById('pergunta-txt').innerText = q.enunciado;
-        document.getElementById('q-atual').innerText = indiceAtual + 1;
-        document.getElementById('feedback').innerText = "";
-        document.getElementById('btn-confirmar').classList.remove('hidden');
-        document.getElementById('btn-proxima').classList.add('hidden');
-
-        const container = document.getElementById('opcoes-container');
-        container.innerHTML = "";
-        q.opcoes.forEach((opcao, i) => {
-            const div = document.createElement('div');
-            div.className = 'opcao';
-            div.innerText = opcao;
-            div.onclick = () => {
-                if(respondida) return;
-                selecionadaIdx = i;
-                document.querySelectorAll('.opcao').forEach(el => el.classList.remove('selecionada'));
-                div.classList.add('selecionada');
-            };
-            container.appendChild(div);
-        });
-    };
-
-    window.verificarResposta = () => {
-        if(selecionadaIdx === null) return alert("Selecione uma opção!");
-        respondida = true;
-        const correta = bancoGeral[indiceAtual].correta;
-        const divs = document.querySelectorAll('.opcao');
-        if(selecionadaIdx === correta) {
-            divs[selecionadaIdx].classList.add('correta');
-            acertos++;
-            document.getElementById('feedback').innerHTML = "<span style='color:var(--success)'>Você acertou!</span>";
-        } else {
-            divs[selecionadaIdx].classList.add('errada');
-            divs[correta].classList.add('correta');
-            document.getElementById('feedback').innerHTML = "<span style='color:var(--danger)'>Você errou!</span>";
-        }
-        document.getElementById('q-acertos').innerText = acertos;
-        document.getElementById('btn-confirmar').classList.add('hidden');
-        document.getElementById('btn-proxima').classList.remove('hidden');
-    };
-
-    window.proximaQuestao = () => {
-        indiceAtual++;
-        if(indiceAtual < bancoGeral.length) {
-            exibirQuestao();
-        } else {
-            mostrarResultadoFinal();
-        }
-    };
-
-    function mostrarResultadoFinal() {
-        document.getElementById('area-estudo').classList.add('hidden');
-        document.getElementById('tela-final').classList.remove('hidden');
-        const ctx = document.getElementById('graficoFinal').getContext('2d');
-        new Chart(ctx, {
-            type: 'doughnut',
-            data: {
-                labels: ['Acertos', 'Erros'],
-                datasets: [{ data: [acertos, bancoGeral.length - acertos], backgroundColor: ['#22c55e', '#ef4444'] }]
+                document.getElementById('pergunta-txt').innerText = "Banco de dados vazio.";
             }
         });
     }
 </script>
 </body>
 </html>
-
