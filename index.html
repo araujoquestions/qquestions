@@ -301,3 +301,113 @@ const app = initializeApp(firebaseConfig);
 
 </body>
 </html>
+
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Plataforma de Concursos Pro</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root { --primary: #2563eb; --bg: #f8fafc; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 20px; }
+        .nav { display: flex; justify-content: space-between; align-items: center; background: white; padding: 15px 30px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .user-info { display: flex; align-items: center; gap: 10px; }
+        .user-info img { width: 40px; border-radius: 50%; }
+        .card { background: white; padding: 30px; border-radius: 15px; max-width: 600px; margin: auto; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .hidden { display: none; }
+        .btn-google { background: white; color: #444; border: 1px solid #ddd; padding: 10px 20px; border-radius: 5px; cursor: pointer; display: flex; align-items: center; gap: 10px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="nav">
+    <h2>Simulado Morrinhos</h2>
+    <div id="auth-section">
+        <button class="btn-google" id="btn-login">
+            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/pwa/google.svg" width="20"> Entrar com Google
+        </button>
+    </div>
+    <div id="user-section" class="hidden">
+        <div class="user-info">
+            <span id="user-name"></span>
+            <img id="user-photo" src="">
+            <button onclick="logout()" style="border:none; background:none; color:red; cursor:pointer;">Sair</button>
+        </div>
+    </div>
+</div>
+
+<div class="card" id="main-content">
+    <div id="tela-boas-vindas">
+        <h1 style="text-align: center;">Bem-vindo ao seu portal de estudos!</h1>
+        <p style="text-align: center; color: #666;">Faça login para começar a responder questões e salvar seu desempenho.</p>
+    </div>
+
+    <div id="area-estudo" class="hidden">
+        <h3 id="pergunta-txt">Carregando questões...</h3>
+        <div id="opcoes-container"></div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+    const firebaseConfig = {
+        apiKey: "SUA_API_KEY",
+        authDomain: "SEU_PROJETO.firebaseapp.com",
+        projectId: "SEU_PROJETO",
+        databaseURL: "https://SEU_PROJETO.firebaseio.com",
+        appId: "SEU_ID"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getDatabase(app);
+    const provider = new GoogleAuthProvider();
+
+    // --- FUNÇÃO DE LOGIN ---
+    document.getElementById('btn-login').onclick = () => {
+        signInWithPopup(auth, provider).catch(error => console.log(error));
+    };
+
+    // --- LOGOUT ---
+    window.logout = () => signOut(auth);
+
+    // --- MONITOR DE USUÁRIO (DETECTA SE ESTÁ LOGADO OU NÃO) ---
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            // Usuário Logado
+            document.getElementById('auth-section').classList.add('hidden');
+            document.getElementById('user-section').classList.remove('hidden');
+            document.getElementById('tela-boas-vindas').classList.add('hidden');
+            document.getElementById('area-estudo').classList.remove('hidden');
+            
+            document.getElementById('user-name').innerText = user.displayName;
+            document.getElementById('user-photo').src = user.photoURL;
+            
+            carregarDadosDaNuvem();
+        } else {
+            // Usuário Deslogado
+            document.getElementById('auth-section').classList.remove('hidden');
+            document.getElementById('user-section').classList.add('hidden');
+            document.getElementById('area-estudo').classList.add('hidden');
+            document.getElementById('tela-boas-vindas').classList.remove('hidden');
+        }
+    });
+
+    function carregarDadosDaNuvem() {
+        const questoesRef = ref(db, 'questoes');
+        onValue(questoesRef, (snapshot) => {
+            const data = snapshot.val();
+            if(data) {
+                const lista = Object.values(data);
+                document.getElementById('pergunta-txt').innerText = lista[0].enunciado;
+                // Aqui você usaria a lógica de exibir opções que já criamos
+            }
+        });
+    }
+</script>
+</body>
+</html>
