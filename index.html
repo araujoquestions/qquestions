@@ -47,8 +47,9 @@
 
 <script type="module">
 // Importando direto do servidor do Google para evitar o erro 404
+<script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getAuth, signInWithRedirect, getRedirectResult, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
     import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
     const firebaseConfig = {
@@ -66,50 +67,61 @@
     const db = getDatabase(app);
     const provider = new GoogleAuthProvider();
 
-    // Lógica dos Botões
-    const btnLogin = document.getElementById('btn-login-google');
-    const btnLogout = document.getElementById('btn-logout');
+    // Configura o provedor para não dar erro de política de segurança
+    provider.setCustomParameters({ prompt: 'select_account' });
 
-    if (btnLogin) {
-        btnLogin.addEventListener('click', () => {
-            signInWithRedirect(auth, provider);
-        });
-    }
+    // Função de Login simplificada
+    window.loginGoogle = async () => {
+        try {
+            await signInWithPopup(auth, provider);
+        } catch (error) {
+            console.error("Erro no login:", error);
+            alert("Erro ao logar: " + error.message);
+        }
+    };
 
-    if (btnLogout) {
-        btnLogout.addEventListener('click', () => {
-            signOut(auth);
-        });
-    }
+    window.logout = () => signOut(auth);
 
-    // Monitor de Login
+    // Gerenciamento da Interface
     onAuthStateChanged(auth, (user) => {
-        const authSection = document.getElementById('auth-section');
-        const userSection = document.getElementById('user-section');
-        const boasVindas = document.getElementById('tela-boas-vindas');
+        const authSec = document.getElementById('auth-section');
+        const userSec = document.getElementById('user-section');
         const areaEstudo = document.getElementById('area-estudo');
+        const boasVindas = document.getElementById('tela-boas-vindas');
 
         if (user) {
-            authSection.classList.add('hidden');
-            userSection.classList.remove('hidden');
+            authSec.classList.add('hidden');
+            userSec.classList.remove('hidden');
             boasVindas.classList.add('hidden');
             areaEstudo.classList.remove('hidden');
-            
             document.getElementById('user-name').innerText = user.displayName;
             document.getElementById('user-photo').src = user.photoURL;
-            
-            // Chamar função de carregar questões (opcional por enquanto)
-            console.log("Usuário logado com sucesso!");
+            carregarQuestoes();
         } else {
-            authSection.classList.remove('hidden');
-            userSection.classList.add('hidden');
-            boasVindas.classList.remove('hidden');
+            authSec.classList.remove('hidden');
+            userSec.classList.add('hidden');
             areaEstudo.classList.add('hidden');
+            boasVindas.classList.remove('hidden');
         }
     });
+
+    function carregarQuestoes() {
+        const questoesRef = ref(db, 'questoes');
+        onValue(questoesRef, (snapshot) => {
+            const data = snapshot.val();
+            if(data) {
+                const lista = Object.values(data);
+                document.getElementById('pergunta-txt').innerText = lista[0].enunciado;
+            } else {
+                document.getElementById('pergunta-txt').innerText = "Banco de dados vazio. Adicione questões no painel!";
+            }
+        });
+    }
+</script>
 </script>
 </body>
 </html>
+
 
 
 
