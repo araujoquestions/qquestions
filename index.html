@@ -46,11 +46,11 @@
 </div>
 
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getAuth, signInWithRedirect, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+// Importando direto do servidor do Google para evitar o erro 404
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAuth, signInWithRedirect, getRedirectResult, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
     import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-    // Suas credenciais reais que você enviou
     const firebaseConfig = {
       apiKey: "AIzaSyAKpX4VawBCUzE9CwmJBX5eM4CZF4YG4LI",
       authDomain: "qquestions-1450b.firebaseapp.com",
@@ -61,7 +61,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
       appId: "1:484450797258:web:34c2efb98250c0c1a35633"
     };
 
-    // Inicialização
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getDatabase(app);
@@ -111,6 +110,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
 </script>
 </body>
 </html>
+
 
 
 
