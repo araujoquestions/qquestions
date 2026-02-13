@@ -46,7 +46,6 @@
 </div>
 
 <script type="module">
-// Importando direto do servidor do Google para evitar o erro 404
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
@@ -67,22 +66,20 @@
     const db = getDatabase(app);
     const provider = new GoogleAuthProvider();
 
-    // Configura o provedor para não dar erro de política de segurança
-    provider.setCustomParameters({ prompt: 'select_account' });
-
-    // Função de Login simplificada
-    window.loginGoogle = async () => {
-        try {
-            await signInWithPopup(auth, provider);
-        } catch (error) {
-            console.error("Erro no login:", error);
-            alert("Erro ao logar: " + error.message);
-        }
+    // Esta função agora está "global", o botão vai encontrá-la sempre
+    window.loginGoogle = () => {
+        signInWithPopup(auth, provider)
+            .then((result) => {
+                console.log("Sucesso:", result.user.displayName);
+            })
+            .catch((error) => {
+                alert("Erro no login: " + error.message);
+                console.error(error);
+            });
     };
 
     window.logout = () => signOut(auth);
 
-    // Gerenciamento da Interface
     onAuthStateChanged(auth, (user) => {
         const authSec = document.getElementById('auth-section');
         const userSec = document.getElementById('user-section');
@@ -96,7 +93,6 @@
             areaEstudo.classList.remove('hidden');
             document.getElementById('user-name').innerText = user.displayName;
             document.getElementById('user-photo').src = user.photoURL;
-            carregarQuestoes();
         } else {
             authSec.classList.remove('hidden');
             userSec.classList.add('hidden');
@@ -104,23 +100,10 @@
             boasVindas.classList.remove('hidden');
         }
     });
-
-    function carregarQuestoes() {
-        const questoesRef = ref(db, 'questoes');
-        onValue(questoesRef, (snapshot) => {
-            const data = snapshot.val();
-            if(data) {
-                const lista = Object.values(data);
-                document.getElementById('pergunta-txt').innerText = lista[0].enunciado;
-            } else {
-                document.getElementById('pergunta-txt').innerText = "Banco de dados vazio. Adicione questões no painel!";
-            }
-        });
-    }
-</script>
 </script>
 </body>
 </html>
+
 
 
 
